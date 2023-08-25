@@ -27,45 +27,34 @@ make init
 
 After executing the last command, application should start up and expose api at: <http://localhost:8080/graphql>
 
-To get all trades:
-
-```
-get_trade:
-{
-  management{
-    trades{
-      base,
-      quote,
-      feeAmount,
-      feeCurrency,
-      transactionTime,
-      labels
-    }
-  }
-}
-```
-
 To filter and paginate use:
 
-`$baseAssetSymbol` is a variable that you can provide to filter trades based on the base asset symbol.
+`baseAssetSymbol`: is a variable that you can provide to filter trades based on the base asset symbol.
 
-`$page` is a variable for the page number you want to retrieve.
+`page`: is a variable for the page number you want to retrieve.
 
-`$pageSize` is a variable for the number of trades per page.
+`pageSize`: is a variable for the number of trades per page.
+
 ```
 {
-  management{
-    tradeResults(baseAssetSymbol: "", page:1, pageSize: 10){
-      totalCount,
-      trades{
-      base,
-      quote,
-      feeAmount,
-      feeCurrency,
-      transactionTime,
-      labels
-    }
+  management {
+    tradeResults(baseAssetSymbol: "", page: 1, pageSize: 10) {
+      totalCount
+      trades {
+        base
+        quote
+        fee {
+          amount
+          currency
+        }
+        transactionTime
+        labels {
+          key
+          value
+        }
+      }
     }
   }
 }
 ```
+

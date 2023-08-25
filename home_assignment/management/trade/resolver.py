@@ -4,31 +4,20 @@ from ...deps import GenieInfo
 from .database import query_trades
 from re import search
 @strawberry.type
+class LabelKeyValue:
+    key: str
+    value: str
+@strawberry.type
+class Fee:
+    amount: str
+    currency: str
+@strawberry.type
 class Trade:
     base: str
     quote: str
-    fee_amount: str
-    fee_currency: str
+    fee: Fee
     transaction_time: str
-    labels: list[str] 
-
-async def get_trades(info: GenieInfo) -> list[Trade]:
-    with info.context.session_factory.begin() as session:
-        trades = query_trades(session)
-
-        trade_list = []
-        for trade in trades:
-            trade_entry = Trade(
-                base=trade.base.name,
-                quote=trade.quote.name,
-                fee_amount=trade.fee.amount,
-                fee_currency=trade.fee.currency.name,
-                transaction_time=trade.placed_at,
-                labels=[label.value for label in trade.labels]
-            )
-            trade_list.append(trade_entry)
-
-        return trade_list
+    labels: list[LabelKeyValue] 
 
 @strawberry.type
 class TradeResultSet:
@@ -43,7 +32,6 @@ async def get_trade_results(
 ) -> TradeResultSet:
     with info.context.session_factory.begin() as session:
         trades = query_trades(session, base_asset_symbol)
-        total_count = len(trades)
 
         start_idx = (page - 1) * page_size
         end_idx = start_idx + page_size
@@ -51,15 +39,18 @@ async def get_trade_results(
 
         trade_list = []
         for trade in paged_trades:
+            labels = [
+                LabelKeyValue(key=label.key.name, value=label.value)
+                for label in trade.labels
+            ]
             trade_entry = Trade(
                 base=trade.base.name,
                 quote=trade.quote.name,
-                fee_amount=trade.fee.amount,
-                fee_currency=trade.fee.currency.name,
+                fee = Fee(amount=trade.fee.amount, currency=trade.fee.currency.name),
                 transaction_time=trade.placed_at,
-                labels=[label.value for label in trade.labels]
+                labels=labels
             )
             if search(base_asset_symbol.lower(), trade.base.name.lower()):
                 trade_list.append(trade_entry)
 
-        return TradeResultSet(total_count=total_count, trades=trade_list)
+        return TradeResultSet(total_count=len(trade_list), trades=trade_list)
